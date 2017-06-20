@@ -1,10 +1,15 @@
 import operator
 import datetime
-import requests
 
 from twilio.rest import Client
 
 from bs4 import BeautifulSoup
+
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.keys import Keys
 
 def send_sms(msg):
 	account_sid = "ACeff5916623198f15f795f595d1443f33"
@@ -20,10 +25,10 @@ def average(ls):
 	av = total/len(ls)
 	return float("{0:.1f}".format(av))
 
-def weather_report(url):
-	page = requests.get(url)
-	html = page.text
-
+def weather_report(browser):
+	browser.get('https://weather.com/weather/hourbyhour/l/USMA0429:1:US')
+	WebDriverWait(browser, 10).until(EC.visibility_of_element_located((By.CSS_SELECTOR, 'td.temp')))
+	html = browser.page_source
 	soup = BeautifulSoup(html, "lxml")
 
 	temps = soup.find_all('td', class_='temp')
@@ -65,10 +70,17 @@ def weather_report(url):
 
 
 def main():
+	options = webdriver.ChromeOptions()
+	options.add_argument('headless')
+	options.add_argument('--disable-infobars')
+
+	browser = webdriver.Chrome('C:/Python27/MyStuff/chromedriver.exe', chrome_options=options)
+
 	now = datetime.datetime.now()
-	msg = '\nReport for %d/%d: ' % (now.month, now.day)
-	msg += '\n' + weather_report('https://weather.com/weather/hourbyhour/l/USMA0429:1:US')
+	msg = '\nReport for %d/%d: \n' % (now.month, now.day)
+	msg += weather_report(browser)
 	send_sms(msg)
+	browser.quit()
 
 if __name__=="__main__":
 	main()
